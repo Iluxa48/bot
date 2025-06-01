@@ -1,0 +1,42 @@
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from ..config import api_token
+import random
+
+bot = telebot.TeleBot(api_token)
+
+@bot.message_handler(commands=['info'])
+def info(message):
+    bot.reply_to(message, "Доступные команды: \n" \
+    "/hello - эта команда что бы бот с вами поздоровался случайным образом \n" \
+    "/dice - команда для получения случайного числа от 1 до 6 \n" \
+    "или вы можете написать текст и ответить на вопрос")
+
+@bot.message_handler(commands=["hello"])
+def hello(message):
+    random_hello = random.choice(["Привет", "Здорово", "Добро пожаловать"])
+    bot.reply_to(message, random_hello)
+
+@bot.message_handler(commands=['dice'])
+def dice(message):
+    bot.reply_to(message, random.randint(1,6))
+
+def gen_markup():
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(InlineKeyboardButton("4", callback_data="cb_yes"),
+                               InlineKeyboardButton("5", callback_data="cb_no"))
+    return markup
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    if call.data == "cb_yes":
+        bot.answer_callback_query(call.id, "Вы ответили верно!")
+    elif call.data == "cb_no":
+        bot.answer_callback_query(call.id, "Вы ошиблись")
+
+@bot.message_handler(func=lambda message: True)
+def message_handler(message):
+    bot.send_message(message.chat.id, "Сколько будет 2+2 ?", reply_markup=gen_markup())
+
+bot.infinity_polling()
