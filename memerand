@@ -1,0 +1,48 @@
+import telebot
+from Телеграмм.config import *
+import os
+import random
+
+bot = telebot.TeleBot(api_token)
+bot.send_message(CHAT_ID, "🤖 Бот успешно запущен!")
+
+# Словарь с весами для мемов (название файла: вес)
+# Чем больше вес, тем чаще мем будет появляться
+memes_weights = {
+    "mem1.jpg": 10,  # Частый мем
+    "mem2.jpg": 8,  # Достаточно частый
+    "mem3.jpg": 3,  # Редкий мем
+
+}
+rarest_mem = min(memes_weights, key=memes_weights.get)
+
+@bot.message_handler(commands=['mem'])
+def send_mem(message):
+    # Получаем список файлов в директории
+    memes_files = os.listdir('../images')
+
+    # Создаем список с учетом весов
+    weighted_memes = []
+    for mem in memes_files:
+        weight = memes_weights.get(mem, 5)  # По умолчанию вес 5, если не указан
+        weighted_memes.extend([mem] * weight)
+
+    # Выбираем случайный мем с учетом весов
+    chosen_mem = random.choice(weighted_memes)
+    mem_path = f"../images/{chosen_mem}"
+
+    print(f"Отправлен мем: {chosen_mem} (вес: {memes_weights.get(chosen_mem, 5)})")
+
+    try:
+        with open(mem_path, 'rb') as f:
+            bot.send_photo(message.chat.id, f)
+
+            # Проверяем, является ли мем самым редким
+            if chosen_mem == rarest_mem:
+                bot.send_message(message.chat.id, "🎉 Вы выбили самый редкий мем! 🎉")
+
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка при отправке мема: {e}")
+
+
+bot.polling()
